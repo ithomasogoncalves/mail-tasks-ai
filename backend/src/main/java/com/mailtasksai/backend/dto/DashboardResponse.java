@@ -1,0 +1,16 @@
+package com.mailtasksai.backend.dto;
+
+import com.mailtasksai.backend.model.Task;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class DashboardResponse {
+    private List<Task> tasks;
+    private TaskStats stats;
+}
