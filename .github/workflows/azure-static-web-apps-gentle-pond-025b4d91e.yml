@@ -14,26 +14,20 @@ jobs:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     name: Build and Deploy Job
-    permissions:
-       id-token: write
-       contents: read
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: true
           lfs: false
-          
-      - name: Install OIDC Client from Core Package
-        run: npm install @actions/core@1.6.0 @actions/http-client
-        
-      - name: Get Id Token
-        uses: actions/github-script@v6
-        id: idtoken
-        with:
-           script: |
-               const coredemo = require('@actions/core')
-               return await coredemo.getIDToken()
-           result-encoding: string
+
+      - name: Debug Secret (Segurança)
+        run: |
+          if [ -z "${{ secrets.AZURE_STATIC_WEB_APPS_TOKEN }}" ]; then
+            echo "ERRO CRÍTICO: O segredo AZURE_STATIC_WEB_APPS_TOKEN está VAZIO ou não foi encontrado!"
+            exit 1
+          else
+            echo "SUCESSO: O segredo foi encontrado e tem caracteres. Tentando autenticar..."
+          fi
 
       - name: Build And Deploy
         id: builddeploy
@@ -43,9 +37,9 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           
-          app_location: "frontend" 
+          app_location: "frontend"
           api_location: ""
-          output_location: "dist"
+          output_location: "dist" 
           
         env:
           VITE_API_URL: "https://mailtasks-api-cbgsbygnaac0hfhv.westus3-01.azurewebsites.net/api"
