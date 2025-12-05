@@ -10,16 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.Arrays;
-import java.util.List;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
-
-    @Value("${ADMIN_PASSWORD:admin123}")
-    private String adminPassword;
 
     @Autowired
     private CategoryRepository categoryRepository;
@@ -40,30 +35,32 @@ public class DataInitializer implements CommandLineRunner {
                     new Category("MARKETING", "#f59e0b"),
                     new Category("VENDAS", "#ec4899")
             ));
-            System.out.println("Categorias inicializadas.");
         }
 
         Company company;
         if (companyRepository.count() == 0) {
             company = new Company();
-            company.setName("Minha Empresa");
+            company.setName("Minha Empresa Demo");
             company = companyRepository.save(company);
-            System.out.println("Empresa criada com sucesso.");
         } else {
             company = companyRepository.findAll().get(0);
         }
 
-        if (userRepository.count() == 0) {
-            User user = new User();
-            user.setCompany(company);
-            user.setName("Admin Master");
-            user.setEmail("ithomasogoncalves@outlook.com");
-            user.setRole("admin");
-            user.setPassword(new BCryptPasswordEncoder().encode(adminPassword));
+        String emailDemo = "ithomasogoncalves@outlook.com";
+        String senhaDemo = "Thomas16632";
 
-            userRepository.save(user);
-            System.out.println("### USUÁRIO ADMIN CRIADO ###");
-            System.out.println("Login: ithomasogoncalves@outlook.com");
-        }
+        User user = userRepository.findByEmail(emailDemo).orElse(new User());
+
+        user.setCompany(company);
+        user.setName("Thomás Gonçalves");
+        user.setEmail(emailDemo);
+        user.setRole("admin");
+        user.setPassword(new BCryptPasswordEncoder().encode(senhaDemo));
+
+        userRepository.save(user);
+
+        System.out.println("### USUÁRIO DE DEMONSTRAÇÃO ATUALIZADO ###");
+        System.out.println("Login: " + emailDemo);
+        System.out.println("Senha: " + senhaDemo);
     }
 }
