@@ -1,11 +1,30 @@
 # Stage 1: Build the application
 FROM maven:3.9.6-eclipse-temurin-21 AS build
 WORKDIR /app
-# ... (Instruções de build)
+
+# Copy the Maven wrapper and pom.xml first to leverage Docker cache
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
+
+# Download dependencies
+RUN ./mvnw dependency:go-offline
+
+# Copy the rest of the source code
+COPY src src
+
+# Build the application
 RUN ./mvnw package -DskipTests
 
 # Stage 2: Create the final image
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
-# ... (Instruções de execução)
+
+# Copy the built JAR from the build stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose the port (default Spring Boot port is 8080)
+EXPOSE 8080
+
+# Run the application
 ENTRYPOINT ["java", "-jar", "app.jar"]
