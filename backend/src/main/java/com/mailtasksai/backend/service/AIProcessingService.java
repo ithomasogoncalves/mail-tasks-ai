@@ -77,7 +77,7 @@ public class AIProcessingService {
             
             SEMPRE retorne um JSON válido no seguinte formato:
             {
-              "resumo_tarefa": "string com máximo 300 caracteres, Extraia os dados técnicos da solicitação em formato de lista estruturada (tópicos). Use estilo telegráfico, direto e sem preposições. Identifique obrigatoriamente: Rota, Carga (peso/medidas) e Ação imediata.",
+              "resumo_tarefa": "string com máximo 300 caracteres, Extraia os dados técnicos da solicitação em formato de lista estruturada (tópicos). Use estilo telegráfico, direto e sem preposições. Identifique obrigatoriamente: Rota, Carga (peso/medidas) (SE A CARGA TIVER MAIS QUE UM VALOR, CALCULE TAMBÉM O TOTAL) e Ação imediata.",
               "urgencia": "URGENTE | MEDIANO | ROTINEIRA",
               "categoria_sugerida": "string (ex: FINANCEIRO, RH, DESENVOLVIMENTO, MARKETING, VENDAS)"
             }
