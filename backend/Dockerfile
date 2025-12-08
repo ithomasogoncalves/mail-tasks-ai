@@ -11,13 +11,13 @@ COPY pom.xml .
 RUN chmod +x mvnw
 
 # Download dependencies
-RUN ./mvnw dependency:go-offline
+RUN ./mvnw dependency:go-offline -Dmaven.compiler.source=21 -Dmaven.compiler.target=21
 
 # Copy the rest of the source code
 COPY src src
 
 # Build the application
-RUN ./mvnw package -DskipTests
+RUN ./mvnw package -DskipTests -Dmaven.compiler.source=21 -Dmaven.compiler.target=21
 
 # Stage 2: Create the final image
 FROM eclipse-temurin:21-jre-alpine
