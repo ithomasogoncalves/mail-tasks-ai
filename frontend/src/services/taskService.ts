@@ -16,8 +16,16 @@ export const taskService = {
     await api.post('/tasks/send', data);
   },
 
-  completeTaskWithMessage: async (id: string, message: string): Promise<void> => {
-    await api.patch(`/tasks/${id}/complete`, { message });
+  sendReply: async (id: string, message: string): Promise<void> => {
+    await api.patch(`/tasks/${id}/reply`, message, {
+      headers: {
+        'Content-Type': 'text/plain'
+      }
+    });
+  },
+
+  completeTask: async (id: string): Promise<void> => {
+    await api.patch(`/tasks/${id}/complete`);
   },
 
   markAsViewed: async (id: string): Promise<void> => {

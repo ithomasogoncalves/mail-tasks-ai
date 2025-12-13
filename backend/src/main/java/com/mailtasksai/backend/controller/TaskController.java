@@ -1,139 +1,74 @@
 package com.mailtasksai.backend.controller;
 
-import com.mailtasksai.backend.dto.DashboardResponse;
 import com.mailtasksai.backend.dto.TaskRequest;
-import com.mailtasksai.backend.dto.TaskStats;
-import com.mailtasksai.backend.model.Company;
 import com.mailtasksai.backend.model.Task;
-import com.mailtasksai.backend.model.User;
+import com.mailtasksai.backend.model.UrgenciaEnum;
+import com.mailtasksai.backend.model.TaskStatus;
 import com.mailtasksai.backend.service.TaskService;
-import com.mailtasksai.backend.service.UserService;
-import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import com.mailtasksai.backend.model.TaskStatus;
-import com.mailtasksai.backend.model.UrgenciaEnum;
-import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.time.LocalDate;
 
 @RestController
-@RequestMapping("/api" )
+@RequestMapping("/tasks")
 @Slf4j
 public class TaskController {
 
     @Autowired
     private TaskService taskService;
 
-    @Autowired
-    private UserService userService;
-
-    private Long getCurrentCompanyId() {
-        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User user = userService.findByEmail(email);
-        return user.getCompany().getId();
-    }
-
-    @GetMapping("/dashboard/tasks")
-    public ResponseEntity<Map<String, Object>> getDashboardTasks(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-
-        Long companyId = getCurrentCompanyId();
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by("receivedAt").descending());
-
-        Page<Task> tasksPage = taskService.getTasksByCompany(companyId, pageable);
-        TaskStats stats = taskService.getTaskStats(companyId);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("tasks", tasksPage.getContent());
-        response.put("stats", stats);
-
-        Map<String, Object> pagination = Map.of(
-                "currentPage", tasksPage.getNumber() + 1,
-                "totalPages", tasksPage.getTotalPages(),
-                "totalItems", tasksPage.getTotalElements(),
-                "itemsPerPage", tasksPage.getSize()
-        );
-        response.put("pagination", pagination);
-
-        return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/tasks/send")
-    public ResponseEntity<Map<String, Object>> sendTask(@Valid @RequestBody TaskRequest request) {
-        Long companyId = getCurrentCompanyId();
-
+    @PostMapping("/send")
+    public ResponseEntity<Task> createTask(@RequestBody TaskRequest request, @AuthenticationPrincipal UserDetails userDetails) {
+        Long companyId = Long.valueOf(userDetails.getUsername());
         Task task = taskService.createAndSendTask(request, companyId);
-
-        return ResponseEntity.ok(Map.of(
-                "message", "Tarefa enviada com sucesso",
-                "task_id", task.getId()
-        ));
+        return ResponseEntity.ok(task);
     }
 
-    @PatchMapping("/tasks/{taskId}/complete")
-    public ResponseEntity<?> completeTaskWithMessage(@PathVariable Long taskId, @RequestBody Map<String, String> request) {
-        String message = request.get("message");
-        Task updatedTask = taskService.markAsCompletedWithMessage(taskId, message);
-        return ResponseEntity.ok(Map.of(
-                "message", "Tarefa marcada como concluída e notificação enviada",
-                "task", updatedTask
-        ));
-    }
-
-    @PatchMapping("/tasks/{taskId}/viewed")
-    public ResponseEntity<?> markAsViewed(@PathVariable Long taskId) {
-        Task updatedTask = taskService.markAsViewed(taskId);
-        return ResponseEntity.ok(Map.of(
-                "message", "Tarefa marcada como vista",
-                "task", updatedTask
-        ));
-    }
-
-    @GetMapping("/tasks/{id}")
-    public ResponseEntity<Task> getTaskById(@PathVariable Long id) {
-        return ResponseEntity.ok(taskService.getTaskById(id));
-    }
-
-    @GetMapping("/tasks/search")
+    @GetMapping
     public ResponseEntity<Page<Task>> searchTasks(
-            @RequestParam(required = false) String q,
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(required = false) String query,
             @RequestParam(required = false) UrgenciaEnum urgencia,
             @RequestParam(required = false) String categoria,
             @RequestParam(required = false) TaskStatus status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            Pageable pageable) {
 
-        Long companyId = getCurrentCompanyId();
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by("receivedAt").descending());
-
-        Page<Task> tasks = taskService.searchTasks(companyId, q, urgencia, categoria, status, dateFrom, dateTo, pageable);
+        Long companyId = Long.valueOf(userDetails.getUsername());
+        Page<Task> tasks = taskService.searchTasks(companyId, query, urgencia, categoria, status, dateFrom, dateTo, pageable);
         return ResponseEntity.ok(tasks);
     }
 
-    @PostMapping("/tasks/{taskId}/notify")
-    public ResponseEntity<?> notifyStatus(@PathVariable Long taskId, @RequestParam String status) {
+    @GetMapping("/{taskId}")
+    public ResponseEntity<Task> getTaskById(@PathVariable Long taskId) {
         Task task = taskService.getTaskById(taskId);
+        return ResponseEntity.ok(task);
+    }
 
-        String subject = "Atualização da Tarefa: " + task.getResumoTarefa();
-        String body = "Olá,\n\nA tarefa solicitada via e-mail (" + task.getEmailSubject() + ") agora está com status: " + status + ".\n\nAtenciosamente,\nMail Task AI.";
+    @PatchMapping("/{taskId}/reply")
+    public ResponseEntity<Task> sendReply(@PathVariable Long taskId, @RequestBody String message) {
+        Task task = taskService.sendReply(taskId, message);
+        return ResponseEntity.ok(task);
+    }
 
-        taskService.sendNotificationEmail(taskId, task.getFromEmail(), subject, body);
+    @PatchMapping("/{taskId}/complete")
+    public ResponseEntity<Task> markAsCompleted(@PathVariable Long taskId) {
+        Task task = taskService.markAsCompleted(taskId);
+        return ResponseEntity.ok(task);
+    }
 
-        return ResponseEntity.ok(Map.of("message", "Notificação enviada com sucesso"));
+    @PatchMapping("/{taskId}/viewed")
+    public ResponseEntity<Task> markAsViewed(@PathVariable Long taskId) {
+        Task task = taskService.markAsViewed(taskId);
+        return ResponseEntity.ok(task);
     }
 }

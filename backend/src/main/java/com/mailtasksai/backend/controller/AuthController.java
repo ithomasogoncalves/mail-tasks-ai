@@ -12,7 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.List; // Importação adicionada
 import java.util.Map;
 
 @RestController
@@ -44,7 +44,7 @@ public class AuthController {
         System.out.println("Senha recebida: " + request.password());
 
         List<User> users = userRepository.findByEmail(request.email());
-        User user = users.isEmpty() ? null : users.get(0);
+        User user = users.isEmpty() ? null : users.get(0); // Pega o primeiro se existir
 
         if (user == null) {
             System.out.println("ERRO: Usuário não encontrado no banco de dados.");
@@ -62,8 +62,8 @@ public class AuthController {
             return ResponseEntity.status(401).body(Map.of("error", "Senha incorreta"));
         }
 
-        String token = jwtService.generateToken(user.getEmail());
-        System.out.println("SUCESSO: Token gerado.");
+        String token = jwtService.generateToken(String.valueOf(user.getCompany().getId()));
+        System.out.println("SUCESSO: Token gerado com Company ID: " + user.getCompany().getId());
 
         return ResponseEntity.ok(Map.of(
                 "token", token,

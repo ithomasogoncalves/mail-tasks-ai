@@ -71,6 +71,8 @@ public class TaskService {
         task.setStatus(TaskStatus.PENDING);
         task.setReceivedAt(LocalDateTime.now());
 
+        task.setAiSummaryFormatted(request.getTitle());
+
         task.setEmailMessageId("manual-" + UUID.randomUUID().toString());
         task.setFromEmail("painel@mailtasks.ai");
 
@@ -104,21 +106,35 @@ public class TaskService {
         return taskRepository.save(task);
     }
 
-    public Task markAsCompletedWithMessage(Long taskId, String message) {
+    public Task sendReply(Long taskId, String message) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Tarefa não encontrada com ID: " + taskId));
 
-        task.setStatus(TaskStatus.COMPLETED);
-        task.setCompletionMessage(message);
-
-        String subject = "Tarefa Concluída: " + task.getResumoTarefa();
-        String body = "Olá,\n\nA tarefa solicitada via e-mail (" + task.getEmailSubject() + ") foi CONCLUÍDA.\n\n" +
+        String subject = "Resposta à sua solicitação: " + task.getResumoTarefa();
+        String body = "Olá,\n\nRecebemos sua solicitação e aqui está a resposta:\n\n" +
                 "Mensagem do Usuário:\n\"" + message + "\"\n\n" +
                 "Atenciosamente,\nMail Task AI.";
 
         sendNotificationEmail(taskId, task.getFromEmail(), subject, body);
 
-        log.info("Marcando tarefa ID: {} como concluída com mensagem.", taskId);
+        log.info("Enviando resposta para tarefa ID: {}. Status mantido como PENDING/VIEWED.", taskId);
+        return task;
+    }
+
+    public Task markAsCompleted(Long taskId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Tarefa não encontrada com ID: " + taskId));
+
+        task.setStatus(TaskStatus.COMPLETED);
+        task.setCompletionMessage("Tarefa concluída pelo usuário."); // Mensagem padrão
+
+        String subject = "Tarefa Concluída: " + task.getResumoTarefa();
+        String body = "Olá,\n\nA tarefa solicitada via e-mail (" + task.getEmailSubject() + ") foi CONCLUÍDA.\n\n" +
+                "Atenciosamente,\nMail Task AI.";
+
+        sendNotificationEmail(taskId, task.getFromEmail(), subject, body);
+
+        log.info("Marcando tarefa ID: {} como concluída.", taskId);
         return taskRepository.save(task);
     }
 
