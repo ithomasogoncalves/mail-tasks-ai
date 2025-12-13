@@ -12,6 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -49,7 +50,19 @@ public class DataInitializer implements CommandLineRunner {
         String emailDemo = "ithomasogoncalves@outlook.com";
         String senhaDemo = "Thomas16632";
 
-        User user = userRepository.findByEmail(emailDemo).orElse(new User());
+        List<User> users = userRepository.findByEmail(emailDemo);
+        User user;
+
+        if (users.isEmpty()) {
+            user = new User();
+        } else {
+            user = users.get(0);
+            if (users.size() > 1) {
+                for (int i = 1; i < users.size(); i++) {
+                    userRepository.delete(users.get(i));
+                }
+            }
+        }
 
         user.setCompany(company);
         user.setName("Thomás Gonçalves");

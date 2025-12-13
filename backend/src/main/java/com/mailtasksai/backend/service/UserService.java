@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -32,14 +33,20 @@ public class UserService {
     }
 
     public UserProfileResponse getUserProfileByEmail(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilizador não encontrado: " + email));
+        List<User> users = userRepository.findByEmail(email);
+        if (users.isEmpty()) {
+            throw new RuntimeException("Utilizador não encontrado: " + email);
+        }
+        User user = users.get(0);
         return toResponse(user);
     }
 
     public UserProfileResponse updateUserProfileByEmail(String email, UserProfileUpdateRequest request) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilizador não encontrado: " + email));
+        List<User> users = userRepository.findByEmail(email);
+        if (users.isEmpty()) {
+            throw new RuntimeException("Utilizador não encontrado: " + email);
+        }
+        User user = users.get(0);
 
         if (request.getName() != null && !request.getName().isEmpty()) {
             user.setName(request.getName());
@@ -77,7 +84,10 @@ public class UserService {
     }
 
     public User findByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado com e-mail: " + email));
+        List<User> users = userRepository.findByEmail(email);
+        if (users.isEmpty()) {
+            throw new RuntimeException("Usuário não encontrado com e-mail: " + email);
+        }
+        return users.get(0);
     }
 }

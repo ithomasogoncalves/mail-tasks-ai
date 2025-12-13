@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api" )
 @Slf4j
 public class TaskController {
 
@@ -83,10 +83,20 @@ public class TaskController {
     }
 
     @PatchMapping("/tasks/{taskId}/complete")
-    public ResponseEntity<?> completeTask(@PathVariable Long taskId) {
-        Task updatedTask = taskService.markAsCompleted(taskId);
+    public ResponseEntity<?> completeTaskWithMessage(@PathVariable Long taskId, @RequestBody Map<String, String> request) {
+        String message = request.get("message");
+        Task updatedTask = taskService.markAsCompletedWithMessage(taskId, message);
         return ResponseEntity.ok(Map.of(
-                "message", "Tarefa marcada como concluída",
+                "message", "Tarefa marcada como concluída e notificação enviada",
+                "task", updatedTask
+        ));
+    }
+
+    @PatchMapping("/tasks/{taskId}/viewed")
+    public ResponseEntity<?> markAsViewed(@PathVariable Long taskId) {
+        Task updatedTask = taskService.markAsViewed(taskId);
+        return ResponseEntity.ok(Map.of(
+                "message", "Tarefa marcada como vista",
                 "task", updatedTask
         ));
     }

@@ -3,6 +3,7 @@ package com.mailtasksai.backend.service;
 import com.mailtasksai.backend.dto.DashboardResponse;
 import com.mailtasksai.backend.dto.TaskRequest;
 import com.mailtasksai.backend.dto.TaskStats;
+import com.mailtasksai.backend.model.TaskStatus;
 import com.mailtasksai.backend.model.*;
 import com.mailtasksai.backend.repository.CompanyRepository;
 import com.mailtasksai.backend.repository.TaskRepository;
@@ -103,12 +104,30 @@ public class TaskService {
         return taskRepository.save(task);
     }
 
-    public Task markAsCompleted(Long taskId) {
+    public Task markAsCompletedWithMessage(Long taskId, String message) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new RuntimeException("Tarefa não encontrada com ID: " + taskId));
 
         task.setStatus(TaskStatus.COMPLETED);
-        log.info("Marcando tarefa ID: {} como concluída.", taskId);
+        task.setCompletionMessage(message);
+
+        String subject = "Tarefa Concluída: " + task.getResumoTarefa();
+        String body = "Olá,\n\nA tarefa solicitada via e-mail (" + task.getEmailSubject() + ") foi CONCLUÍDA.\n\n" +
+                "Mensagem do Usuário:\n\"" + message + "\"\n\n" +
+                "Atenciosamente,\nMail Task AI.";
+
+        sendNotificationEmail(taskId, task.getFromEmail(), subject, body);
+
+        log.info("Marcando tarefa ID: {} como concluída com mensagem.", taskId);
+        return taskRepository.save(task);
+    }
+
+    public Task markAsViewed(Long taskId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Tarefa não encontrada com ID: " + taskId));
+
+        task.setStatus(TaskStatus.VIEWED);
+        log.info("Marcando tarefa ID: {} como vista.", taskId);
         return taskRepository.save(task);
     }
 

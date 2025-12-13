@@ -1,5 +1,5 @@
 export type Urgency = 'URGENTE' | 'MEDIANO' | 'ROTINEIRA';
-export type TaskStatus = 'PENDING' | 'COMPLETED' | 'ARCHIVED';
+export type TaskStatus = 'PENDING' | 'COMPLETED' | 'ARCHIVED' | 'VIEWED';
 
 export interface Task {
   id: string;
@@ -11,6 +11,8 @@ export interface Task {
   status: TaskStatus;
   emailSubject?: string;
   emailBody?: string;
+  aiSummaryFormatted?: string;
+  completionMessage?: string; 
 }
 
 export interface TaskStats {

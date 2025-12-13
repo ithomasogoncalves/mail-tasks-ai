@@ -66,4 +66,10 @@ public class Task {
 
     @Column(name = "ai_confidence")
     private Double aiConfidence;
+
+    @Column(name = "completion_message", columnDefinition = "TEXT")
+    private String completionMessage;
+
+    @Column(name = "ai_summary_formatted", columnDefinition = "TEXT")
+    private String aiSummaryFormatted;
 }

@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -42,8 +43,8 @@ public class AuthController {
         System.out.println("Email recebido: " + request.email());
         System.out.println("Senha recebida: " + request.password());
 
-        User user = userRepository.findByEmail(request.email())
-                .orElse(null);
+        List<User> users = userRepository.findByEmail(request.email());
+        User user = users.isEmpty() ? null : users.get(0);
 
         if (user == null) {
             System.out.println("ERRO: Usuário não encontrado no banco de dados.");

@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Send, AlertCircle, Clock, CheckCircle2, Loader2, Mail } from "lucide-react";
+import { Plus, Send, AlertCircle, Clock, CheckCircle2, Loader2, Mail, Eye } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import AppLayout from "@/components/AppLayout";
 
@@ -32,6 +32,7 @@ const formatDate = (dateString: string) => {
 const Tasks = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [completionMessage, setCompletionMessage] = useState(""); 
   
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -72,15 +73,46 @@ const Tasks = () => {
     }
   });
 
+  // NOVO: Mutação para concluir com mensagem (Funcionalidade 1)
   const completeTaskMutation = useMutation({
-    mutationFn: taskService.completeTask,
+    mutationFn: ({ id, message }: { id: string, message: string }) => taskService.completeTaskWithMessage(id, message),
     onSuccess: () => {
       toast({ 
         title: "Tarefa concluída", 
-        className: "bg-green-500 text-white border-none" 
+        description: "Status alterado e notificação enviada.",
+        className: "bg-green-600 text-white border-none" 
       });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       if (selectedTask) setSelectedTask(null);
+      setCompletionMessage("");
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível concluir a tarefa.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // NOVO: Mutação para marcar como visto (Funcionalidade 2)
+  const markAsViewedMutation = useMutation({
+    mutationFn: taskService.markAsViewed,
+    onSuccess: () => {
+      toast({ 
+        title: "Tarefa marcada como vista", 
+        description: "O status foi alterado para 'Visto'.",
+        className: "bg-blue-500 text-white border-none" 
+      });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      if (selectedTask) setSelectedTask(null);
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível marcar a tarefa como vista.",
+        variant: "destructive",
+      });
     }
   });
 
@@ -304,10 +336,11 @@ const Tasks = () => {
             {selectedTask && (
               <div className="space-y-6 py-2">
                 <div className="space-y-2">
-                  <Label className="text-muted-foreground text-xs uppercase font-bold">Resumo da IA</Label>
-                  <div className="p-3 bg-muted/50 border rounded-md text-sm font-medium">
-                    {selectedTask.resumoTarefa}
-                  </div>
+	                  <Label className="text-muted-foreground text-xs uppercase font-bold">Resumo da IA</Label>
+	                  <div className="p-3 bg-muted/50 border rounded-md text-sm font-medium whitespace-pre-wrap">
+	                    {/* Funcionalidade 3: Usa o campo formatado se existir, senão usa o resumo original */}
+	                    {selectedTask.aiSummaryFormatted || selectedTask.resumoTarefa}
+	                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -320,32 +353,51 @@ const Tasks = () => {
                   </ScrollArea>
                 </div>
 
-                <div className="flex flex-col gap-2 pt-2 border-t">
-                  <span className="text-xs text-muted-foreground font-medium mb-1">Ações Rápidas & Notificações</span>
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button 
-                      variant="outline" 
-                      className="flex-1 gap-2"
-                      onClick={() => notifyMutation.mutate({ id: selectedTask.id, status: 'EM ANDAMENTO' })}
-                      disabled={notifyMutation.isPending}
-                    >
-                      {notifyMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-                      Notificar: Em Andamento
-                    </Button>
-                    
-                    <Button 
-                      className="flex-1 gap-2 bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => {
-                        completeTaskMutation.mutate(selectedTask.id);
-                        notifyMutation.mutate({ id: selectedTask.id, status: 'CONCLUÍDO' });
-                      }}
-                      disabled={completeTaskMutation.isPending || notifyMutation.isPending}
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      Concluir e Notificar
-                    </Button>
-                  </div>
-                </div>
+	                <div className="flex flex-col gap-2 pt-2 border-t">
+	                  <span className="text-xs text-muted-foreground font-medium mb-1">Ações Rápidas</span>
+	                  
+	                  {/* Funcionalidade 1: Campo de texto e botão "Enviar e Concluir" */}
+	                  <div className="space-y-2">
+	                    <Label htmlFor="completion-message">Mensagem de Conclusão (Opcional)</Label>
+	                    <Textarea
+	                      id="completion-message"
+	                      placeholder="Adicione uma mensagem para o solicitante..."
+	                      value={completionMessage}
+	                      onChange={(e) => setCompletionMessage(e.target.value)}
+	                      rows={2}
+	                    />
+	                  </div>
+
+	                  <div className="flex flex-col sm:flex-row gap-3">
+	                    <Button 
+	                      className="flex-1 gap-2 bg-green-600 hover:bg-green-700 text-white"
+	                      onClick={() => {
+	                        if (selectedTask) {
+	                          completeTaskMutation.mutate({ id: selectedTask.id, message: completionMessage || "Tarefa concluída sem mensagem adicional." });
+	                        }
+	                      }}
+	                      disabled={completeTaskMutation.isPending}
+	                    >
+	                      {completeTaskMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+	                      Enviar e Concluir
+	                    </Button>
+	                    
+	                    {/* Funcionalidade 2: Botão "Marcar como Visto" */}
+	                    <Button 
+	                      variant="outline" 
+	                      className="flex-1 gap-2"
+	                      onClick={() => {
+	                        if (selectedTask) {
+	                          markAsViewedMutation.mutate(selectedTask.id);
+	                        }
+	                      }}
+	                      disabled={markAsViewedMutation.isPending}
+	                    >
+	                      {markAsViewedMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+	                      Marcar como Visto
+	                    </Button>
+	                  </div>
+	                </div>
               </div>
             )}
           </DialogContent>
